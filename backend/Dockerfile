@@ -1,29 +1,24 @@
-# Use an official Node runtime as a parent image
-FROM node:14 AS build
-
-# Set the working directory in the container
-WORKDIR /usr/src/app
-
-# Copy the package.json and package-lock.json files to the container
-COPY package*.json ./
-
-# Install application dependencies
-RUN npm install
-
-# Copy the rest of the application code to the container
-COPY . .
-
-#Add multi-stage build
-FROM alpine:3.16.7
+FROM node:14-alpine
 
 WORKDIR /app
 
-RUN apk update && apk add --update nodejs
+# Copy package files
+COPY package*.json ./
 
-COPY --from=build /usr/src/app /app
+# Install production dependencies only
+RUN npm install --production && \
+    npm cache clean --force
 
-# Expose the port the app runs on
+# Copy application code
+COPY . .
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
+USER nodejs
+
 EXPOSE 5000
 
-# Define the command to run your app
 CMD ["node", "server.js"]
