@@ -63,6 +63,7 @@ services:
       - app-net
     volumes:
       - app-postgres-data:/var/lib/postgresql/data
+      - ./database/init-scripts:/docker-entrypoint-initdb.d:ro
 
 # Network configuration
 networks:
