@@ -1,12 +1,6 @@
-FROM postgres:16-alpine
+FROM postgres:11-alpine
 
-# Set default environment variables (can be overridden in docker-compose)
-ENV POSTGRES_USER=postgres
-ENV POSTGRES_PASSWORD=password
-ENV POSTGRES_DB=ferretdb
+# No packages added - using official image as-is
+# No custom scripts - keeping it minimal
 
-# Expose PostgreSQL port
 EXPOSE 5432
-
-# Use official PostgreSQL entrypoint
-CMD ["postgres"]

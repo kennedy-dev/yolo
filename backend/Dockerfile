@@ -1,24 +1,30 @@
-FROM node:14-alpine
+# Build stage with full Node.js
+FROM node:14-alpine AS build
 
-WORKDIR /app
+WORKDIR /usr/src/app
 
 # Copy package files
 COPY package*.json ./
 
 # Install production dependencies only
-RUN npm install --production && \
-    npm cache clean --force
+RUN npm install --production
 
 # Copy application code
 COPY . .
 
-# Create non-root user
-RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nodejs -u 1001 && \
-    chown -R nodejs:nodejs /app
+# Production stage with minimal Alpine
+FROM alpine:3.18
 
-USER nodejs
+WORKDIR /app
 
+# Install only Node.js runtime (no npm)
+RUN apk add --no-cache nodejs
+
+# Copy everything from build stage
+COPY --from=build /usr/src/app /app
+
+# Expose port
 EXPOSE 5000
 
+# Run the app
 CMD ["node", "server.js"]

@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Production stage - Use nginx to serve static files
-FROM nginx:alpine
+FROM nginx:1.27-alpine-slim
 
 # Copy built assets from build stage
 COPY --from=build /usr/src/app/build /usr/share/nginx/html
