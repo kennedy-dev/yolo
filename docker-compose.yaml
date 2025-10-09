@@ -1,20 +1,10 @@
-#This file builds the Docker images for a React/NodeJS application and runs it as microservices on Docker containers
-
-#To ensure successful execution, clone this entire repository and execute this file while in the root folder of the cloned repository
-
-#It's also a requirement to have Docker and the docker-compose plugin installed in your environment
-
-#To launch this app without having to clone the entire repository,use the docker-compose.yaml file to run the app
-
 version: "3.8"
-
 services:
-
-  #Builds the frontend Docker image and creates the frontend microservice
+  # Frontend microservice
   brian-yolo-client:
-    image: kipanch/yolo-client:latest
+    image: brianbwire/brian-yolo-client:v1.0.0
     build: ./client
-    container_name: kennedy-yolo-client
+    container_name: brian-yolo-client
     stdin_open: true
     tty: true
     ports:
@@ -24,37 +14,57 @@ services:
     networks:
       - app-net
 
-  #Builds the backend Docker image and creates the backend microservice
+  # Backend microservice
   brian-yolo-backend:
-    image: kipanch/yolo-backend:latest
+    image: brianbwire/brian-yolo-backend:v1.0.0
     build: ./backend
-    container_name: kennedy-yolo-backend
+    container_name: brian-yolo-backend
     stdin_open: true
     tty: true
     restart: always
     ports:
       - "5000:5000"
+    environment:
+      # Point to FerretDB instead of MongoDB
+      - MONGODB_URI=mongodb://ferretdb:27017/myapp?authMechanism=PLAIN
     depends_on: 
-      - app-ip-mongo
+      - app-ferretdb
     networks:
       - app-net
 
-  #Creates the database microservice
-  app-ip-mongo:
-    image: kipanch/yolo-mongo:latest
-    build: ./database
-    container_name: app-mongo
+  # FerretDB service (MongoDB-compatible layer)
+  app-ferretdb:
+    image: brianbwire/brian-yolo-ferretdb:v1.0.0
+    build: ./ferretdb
+    container_name: app-ferretdb
     restart: always
     ports:
       - "27017:27017"
+    environment:
+      - FERRETDB_POSTGRESQL_URL=postgres://postgres:password@app-postgres:5432/ferretdb
+    depends_on:
+      - app-postgres
+    networks:
+      - app-net
+
+  # PostgreSQL database (actual data storage)
+  app-postgres:
+    image: brianbwire/brian-yolo-postgres:v1.0.0
+    build: ./database
+    container_name: app-postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=ferretdb
     networks:
       - app-net
     volumes:
-      - type: volume
-        source: app-mongo-data
-        target: /data/db
+      - app-postgres-data:/var/lib/postgresql/data
 
-#Creates the network infrastructure necessary for the containers to communicate with each other
+# Network configuration
 networks:
   app-net:
     name: app-net
@@ -65,7 +75,7 @@ networks:
         - subnet: 172.20.0.0/16 
           ip_range: 172.20.0.0/16 
 
-#Creates a Docker volume that persists all the data stored in the database
+# Persistent storage
 volumes:
-  app-mongo-data:
+  app-postgres-data:
     driver: local
