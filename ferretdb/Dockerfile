@@ -1,4 +1,4 @@
-FROM ghcr.io/ferretdb/ferretdb:1.18
+FROM ghcr.io/ferretdb/ferretdb:latest
 
 EXPOSE 27017
 
