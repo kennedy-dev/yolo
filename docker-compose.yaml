@@ -12,9 +12,9 @@ services:
 
   #Builds the frontend Docker image and creates the frontend microservice
   brian-yolo-client:
-    image: brianbwire/brian-yolo-client:v1.0.0
+    image: kipanch/yolo-client:latest
     build: ./client
-    container_name: brian-yolo-client
+    container_name: kennedy-yolo-client
     stdin_open: true
     tty: true
     ports:
@@ -26,9 +26,9 @@ services:
 
   #Builds the backend Docker image and creates the backend microservice
   brian-yolo-backend:
-    image: brianbwire/brian-yolo-backend:v1.0.0
+    image: kipanch/yolo-backend:latest
     build: ./backend
-    container_name: brian-yolo-backend
+    container_name: kennedy-yolo-backend
     stdin_open: true
     tty: true
     restart: always
@@ -41,8 +41,10 @@ services:
 
   #Creates the database microservice
   app-ip-mongo:
-    image: mongo
+    image: kipanch/yolo-mongo:latest
+    build: ./database
     container_name: app-mongo
+    restart: always
     ports:
       - "27017:27017"
     networks:

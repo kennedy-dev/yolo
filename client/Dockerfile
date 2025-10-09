@@ -7,8 +7,8 @@ WORKDIR /usr/src/app
 # Copy package files
 COPY package*.json ./
 
-# Install ALL dependencies (needed for React build)
-RUN npm ci && npm cache clean --force
+# Install ALL dependencies (use npm install instead of npm ci)
+RUN npm install && npm cache clean --force
 
 # Copy application code
 COPY . .
