@@ -16,7 +16,7 @@ const MONGODB_URI = process.env.MONGODB_URI || mongodb_url + dbName;
 // Connect to MongoDB via FerretDB (removed deprecated options)
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    console.log('Database connected successfully via FerretDB');
+    console.log('Database connected successfully');
   })
   .catch((error) => {
     console.log('Database connection error:', error);

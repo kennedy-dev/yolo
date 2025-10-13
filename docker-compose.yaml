@@ -4,7 +4,7 @@ services:
     build: ./client
     container_name: app-yolo-client
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on: 
       - kennedy-yolo-backend
     networks:
@@ -35,11 +35,13 @@ services:
 
 networks:
   app-net:
+    name: app-net
     driver: bridge
+    attachable: true
     ipam:
       config:
         - subnet: 172.20.0.0/16
-        - ip_range: 172.20.0.0/16
+          ip_range: 172.20.0.0/16
 
 volumes:
   app-mongo-data:

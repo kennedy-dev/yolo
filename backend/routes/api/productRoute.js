@@ -25,7 +25,7 @@ router.post('/', async (req, res) => {
             category: req.body.category,
             quantity: req.body.quantity,
             price: req.body.price,
-            image: req.files.image
+            image: req.files && req.files.image ? req.files.image : null  // Handle optional image
         });
         
         const savedProduct = await newProduct.save();
