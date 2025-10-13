@@ -1,85 +1,46 @@
 services:
-  # Frontend microservice
   kennedy-yolo-client:
-    image: kipanch/yolo-client:v1.0.0
+    image: kipanch/yolo-client:v1.0.3
     build: ./client
     container_name: app-yolo-client
-    stdin_open: true
-    tty: true
     ports:
-      - "3000:3000"
+      - "3000:80"
     depends_on: 
       - kennedy-yolo-backend
     networks:
       - app-net
 
-  # Backend microservice
   kennedy-yolo-backend:
-    image: kipanch/yolo-backend:v1.0.0
+    image: kipanch/yolo-backend:v1.0.3
     build: ./backend
     container_name: app-yolo-backend
-    stdin_open: true
-    tty: true
     restart: always
     ports:
       - "5000:5000"
     environment:
-      - MONGODB_URI=mongodb://app-ferretdb:27017/yolomy
+      - MONGODB_URI=mongodb://app-mongo:27017/yolomy
     depends_on: 
-      - app-ferretdb
+      - app-mongo
     networks:
       - app-net
 
-  # FerretDB (MongoDB-compatible layer)
-  app-ferretdb:
-    image: kipanch/yolo-ferretdb:v1.0.0
-    build: ./ferretdb
-    container_name: app-ferretdb
+  app-mongo:
+    image: mongo
+    container_name: app-mongo
     restart: always
-    ports:
-      - "27017:27017"
-    environment:
-      - FERRETDB_POSTGRESQL_URL=postgres://postgres:password@app-postgres-documentdb:5432/postgres
-    depends_on:
-      app-postgres-documentdb:
-        condition: service_healthy
-    networks:
-      - app-net
-
-  # PostgreSQL with DocumentDB extension
-  app-postgres-documentdb:
-    image: kipanch/yolo-postgres-documentdb:v1.0.0
-    build: ./database
-    container_name: app-postgres-documentdb
-    restart: always
-    ports:
-      - "5432:5432"
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=postgres
     networks:
       - app-net
     volumes:
-      - postgres-documentdb-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - app-mongo-data:/data/db
 
-# Network configuration
 networks:
   app-net:
-    name: app-net
     driver: bridge
-    attachable: true
     ipam:
       config:
-        - subnet: 172.20.0.0/16 
-          ip_range: 172.20.0.0/16 
+        - subnet: 172.20.0.0/16
+        - ip_range: 172.20.0.0/16
 
-# Persistent storage
 volumes:
-  postgres-documentdb-data:
+  app-mongo-data:
     driver: local
