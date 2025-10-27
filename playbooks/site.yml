@@ -1,0 +1,78 @@
+---
+- name: Deploy YOLO E-commerce Application
+  hosts: web_servers
+  become: yes
+  gather_facts: yes
+  
+  vars_files:
+    - ../group_vars/all.yml
+  
+  pre_tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 600
+      tags: ['always']
+
+  roles:
+    - role: common
+      tags: ['common', 'setup']
+    - role: docker
+      tags: ['docker', 'setup']
+    - role: application
+      tags: ['app', 'deploy']
+    - role: mongo
+      tags: ['app-mongo', 'database']
+
+  post_tasks:
+    - name: Wait for containers to start
+      pause:
+        seconds: 45
+      tags: ['verify']
+
+    - name: Verify backend is running
+      uri:
+        url: "http://{{ ansible_host }}:{{ backend_port }}/api/health"
+        method: GET
+        status_code: 200, 404
+      register: health_check
+      retries: 5
+      delay: 10
+      until: health_check.status == 200, 404
+      ignore_errors: yes
+      tags: ['verify']
+
+    - name: Check if frontend is accessible
+      uri:
+        url: "http://{{ ansible_host }}:{{ frontend_port }}"
+        method: GET
+        status_code: 200
+      register: frontend_check
+      retries: 3
+      delay: 5
+      ignore_errors: yes
+      tags: ['verify']
+
+    - name: Display deployment status
+      debug:
+        msg: |
+          ========================================
+          YOLO E-commerce Application Status
+          ========================================
+          Frontend: http://{{ ansible_host }}:{{ frontend_port }} - {{ 'UP' if frontend_check.status|default(0) == 200 else 'DOWN' }}
+          Backend:  http://{{ ansible_host }}:{{ backend_port }}/api - {{ 'UP' if health_check.status|default(0) == 200 else 'DOWN' }}
+          
+          Container Status:
+          - kennedy-yolo-client (port {{ frontend_port }})
+          - kennedy-yolo-backend (port {{ backend_port }})  
+          - app-mongo (database)
+          
+          Network: app-net (172.20.0.0/16)
+          Volume: app-mongo-data (persistent storage)
+          
+          🧪 Test Add Product functionality:
+          1. Go to http://{{ ansible_host }}:{{ frontend_port }}
+          2. Find the Add Product form
+          3. Add a test product
+          4. Verify it appears in the product list
+      tags: ['verify']
