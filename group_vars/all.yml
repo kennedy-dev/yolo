@@ -1,0 +1,26 @@
+# Application Configuration
+app_name: yolo-ecommerce
+app_user: vagrant
+app_directory: /opt/yolo-app
+git_repo: https://github.com/kennedy-dev/yolo.git
+git_branch: master
+
+# Docker Configuration
+docker_compose_version: "1.29.2"
+docker_users:
+  - "{{ app_user }}"
+docker_username: kipanch
+image_tag: v1.0.3
+
+# Application Ports
+frontend_port: 3000
+backend_port: 5000
+mongodb_port: 27017
+
+# Database Configuration (simplified - no auth for mongo)
+mongodb_database: yolomy
+
+# Environment Variables
+node_env: production
+jwt_secret: your_super_secret_jwt_key_here
+cors_origin: "http://192.168.56.10:3000"
