@@ -1,0 +1,32 @@
+---
+- name: Install required system packages
+  apt:
+    name:
+      - curl
+      - wget
+      - git
+      - python3-pip
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+      - unzip
+    state: present
+    update_cache: yes
+  tags: ['packages']
+
+- name: Install Docker Compose via pip
+  pip:
+    name: docker-compose
+    state: present
+  tags: ['packages']
+
+- name: Create application directory
+  file:
+    path: "{{ app_directory }}"
+    state: directory
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0755'
+  tags: ['directories']
