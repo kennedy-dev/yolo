@@ -184,13 +184,6 @@
           
           Test Add Product functionality at the frontend URL!
           
-          This demonstrates REAL enterprise DevOps:
-          • Infrastructure as Code with Terraform
-          • Cloud infrastructure provisioning (GCP)
-          • Configuration Management with Ansible
-          • Production-ready deployment workflow
-          • True cloud-native application deployment
-          
           Remember to destroy resources when done:
           cd terraform && terraform destroy
       tags: ['verify']
