@@ -182,7 +182,7 @@ cd ~/Documents/yolo/stage_two
 export GCP_PROJECT_ID="your-project-id"
 
 # Run the complete deployment
-ansible-playbook -i inventory.yml playbooks/site.yml
+ansible-playbook -i inventory/hosts.yml playbooks/site.yml
 ```
 
 ### Deployment Phases
@@ -331,7 +331,7 @@ stage_two/
 ├── group_vars/
 │   └── all.yml                     # Global variables & configuration
 │
-├── inventory.yml                   # Minimal inventory (dynamic)
+├── inventory/hosts.yml             # Minimal inventory (dynamic)
 │
 └── README.md                       # This file
 ```
