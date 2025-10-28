@@ -142,9 +142,9 @@ gcloud auth application-default print-access-token
 
 ```bash
 # Clone the repository
-cd ~/Documents
 git clone https://github.com/your-repo/yolo.git
-cd yolo/stage_two
+git checkout stage_two
+cd stage_two
 
 # Review and update group_vars/all.yml
 cat group_vars/all.yml
