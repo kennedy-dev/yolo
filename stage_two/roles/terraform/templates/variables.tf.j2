@@ -1,0 +1,59 @@
+variable "gcp_project_id" {
+  description = "GCP Project ID"
+  type        = string
+  default     = "{{ gcp_project_id }}"
+}
+
+variable "gcp_region" {
+  description = "GCP Region"
+  type        = string
+  default     = "{{ gcp_region }}"
+}
+
+variable "gcp_zone" {
+  description = "GCP Zone"
+  type        = string
+  default     = "{{ gcp_zone }}"
+}
+
+variable "server_name" {
+  description = "Name of the server to provision"
+  type        = string
+  default     = "{{ server_name }}"
+}
+
+variable "machine_type" {
+  description = "GCP Machine Type"
+  type        = string
+  default     = "e2-medium"
+}
+
+variable "ssh_user" {
+  description = "SSH username for the instance"
+  type        = string
+  default     = "{{ ssh_user }}"
+}
+
+variable "ssh_public_key_path" {
+  description = "Path to SSH public key"
+  type        = string
+  default     = "{{ ssh_public_key_path }}"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "{{ deployment_environment }}"
+}
+
+variable "frontend_port" {
+  description = "Frontend application port"
+  type        = number
+  default     = {{ frontend_port }}
+}
+
+variable "backend_port" {
+  description = "Backend API port"
+  type        = number
+  default     = {{ backend_port }}
+}

@@ -1,0 +1,196 @@
+# Stage 1: Infrastructure Provisioning with Terraform on GCP
+- name: "Stage 2: Provision GCP Infrastructure with Terraform"
+  hosts: localhost
+  connection: local
+  gather_facts: yes
+  vars_files:
+    - ../group_vars/all.yml
+  
+  pre_tasks:
+  - name: Get project ID from environment or prompt
+    set_fact:
+      gcp_project_id: "{{ lookup('env', 'GCP_PROJECT_ID') if lookup('env', 'GCP_PROJECT_ID') != '' else '' }}"
+  
+  - name: Prompt for project ID if not set
+    pause:
+      prompt: "Enter your GCP Project ID"
+      echo: yes
+    register: project_input
+    when: gcp_project_id == ""
+      
+  - name: Set project ID from input
+    set_fact:
+      gcp_project_id: "{{ project_input.user_input }}"
+    when: gcp_project_id == ""
+    
+  - name: Validate project ID is set
+    fail:
+      msg: "GCP Project ID is required but not provided"
+    when: gcp_project_id == "" or gcp_project_id is undefined
+    
+  - name: Check if SSH key exists
+    stat:
+      path: "{{ ssh_public_key_path | expanduser }}"
+    register: ssh_key_check
+    
+  - name: Generate SSH key if it doesn't exist
+    openssh_keypair:
+      path: "{{ ssh_private_key_path | expanduser }}"
+      type: rsa
+      size: 2048
+      comment: "Generated for YOLO Stage 2 GCP deployment"
+    when: not ssh_key_check.stat.exists
+
+  tasks:
+    - name: Display Stage 2 banner
+      debug:
+        msg: |
+          =====================================
+          Stage 2: Terraform + Ansible on GCP
+          =====================================
+          Provisioning REAL cloud infrastructure
+          Project: {{ gcp_project_id }}
+          Region: {{ gcp_region }}
+          =====================================
+
+    - name: Include Terraform provisioning role
+      include_role:
+        name: terraform
+      tags: ['provision', 'terraform']
+
+    - name: Create dynamic inventory from Terraform output
+      add_host:
+        name: "gcp-server"
+        groups: provisioned_servers
+        ansible_host: "{{ terraform_outputs.instance_ip.value }}"
+        ansible_user: "{{ ssh_user }}"
+        ansible_ssh_private_key_file: "{{ ssh_private_key_path | expanduser }}"
+        ansible_python_interpreter: /usr/bin/python3
+        ansible_ssh_common_args: "-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+      tags: ['provision']
+
+    - name: Wait for instance to be ready
+      wait_for:
+        host: "{{ terraform_outputs.instance_ip.value }}"
+        port: 22
+        delay: 30
+        timeout: 300
+        state: started
+      tags: ['provision']
+
+    - name: Display provisioned infrastructure
+      debug:
+        msg: |
+          ========================================
+          GCP Infrastructure Provisioned!
+          ========================================
+          Instance: {{ terraform_outputs.instance_name.value }}
+          External IP: {{ terraform_outputs.instance_ip.value }}
+          SSH Command: {{ terraform_outputs.ssh_command.value }}
+          
+          Application URLs (after deployment):
+          Frontend: {{ terraform_outputs.application_urls.value.frontend }}
+          Backend:  {{ terraform_outputs.application_urls.value.backend_api }}
+          
+          Proceeding to configuration and deployment...
+      tags: ['provision']
+
+# Stage 2: Configure and Deploy Application on GCP
+- name: "Stage 2: Configure and Deploy Application on GCP"
+  hosts: provisioned_servers
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - ../group_vars/all.yml
+
+  pre_tasks:
+    - name: Display configuration phase
+      debug:
+        msg: |
+          =====================================
+          Stage 2: Configuration Phase
+          =====================================
+          Configuring GCP instance: {{ ansible_host }}
+          User: {{ ansible_user }}
+          =====================================
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 600
+      retries: 5
+      delay: 30
+      register: result
+      until: result is success
+      tags: ['always']
+
+  roles:
+    - role: common
+      tags: ['common', 'config']
+    - role: docker
+      tags: ['docker', 'config'] 
+    - role: application
+      tags: ['app', 'deploy']
+    - role: mongo
+      tags: ['mongodb', 'database']
+
+  post_tasks:
+    - name: Wait for application to be ready
+      pause:
+        seconds: 45
+      tags: ['verify']
+
+    - name: Verify backend is running
+      uri:
+        url: "http://{{ ansible_host }}:{{ backend_port }}/api/health"
+        method: GET
+        status_code: 200
+      register: health_check
+      retries: 5
+      delay: 10
+      until: health_check.status == 200
+      ignore_errors: yes
+      tags: ['verify']
+
+    - name: Check if frontend is accessible
+      uri:
+        url: "http://{{ ansible_host }}:{{ frontend_port }}"
+        method: GET
+        status_code: 200
+      register: frontend_check
+      retries: 3
+      delay: 5
+      ignore_errors: yes
+      tags: ['verify']
+
+    - name: Display Stage 2 deployment completion
+      debug:
+        msg: |
+          ==========================================
+          🎉 Stage 2 Deployment Complete!
+          ==========================================
+          Infrastructure: Provisioned on Google Cloud Platform
+          Configuration: Applied with Ansible
+          Application: Deployed and Running
+          
+          Access your cloud application:
+          Frontend: http://{{ ansible_host }}:{{ frontend_port }}
+          Backend:  http://{{ ansible_host }}:{{ backend_port }}/api
+          Health:   http://{{ ansible_host }}:{{ backend_port }}/api/health
+          Status:   {{ 'UP ✅' if health_check.status|default(0) == 200 else 'DOWN ❌' }}
+          
+          SSH Access:
+          ssh -i {{ ssh_private_key_path }} {{ ansible_user }}@{{ ansible_host }}
+          
+          Test Add Product functionality at the frontend URL!
+          
+          This demonstrates REAL enterprise DevOps:
+          • Infrastructure as Code with Terraform
+          • Cloud infrastructure provisioning (GCP)
+          • Configuration Management with Ansible
+          • Production-ready deployment workflow
+          • True cloud-native application deployment
+          
+          Remember to destroy resources when done:
+          cd terraform && terraform destroy
+      tags: ['verify']

@@ -1,0 +1,40 @@
+output "instance_name" {
+  description = "Name of the created instance"
+  value       = google_compute_instance.yolo_server.name
+}
+
+output "instance_ip" {
+  description = "External IP address of the instance"
+  value       = google_compute_instance.yolo_server.network_interface[0].access_config[0].nat_ip
+}
+
+output "instance_internal_ip" {
+  description = "Internal IP address of the instance"
+  value       = google_compute_instance.yolo_server.network_interface[0].network_ip
+}
+
+output "ssh_command" {
+  description = "SSH command to connect to the instance"
+  value       = "ssh -i ~/.ssh/id_rsa ${var.ssh_user}@${google_compute_instance.yolo_server.network_interface[0].access_config[0].nat_ip}"
+}
+
+output "application_urls" {
+  description = "Application access URLs"
+  value = {
+    frontend    = "http://${google_compute_instance.yolo_server.network_interface[0].access_config[0].nat_ip}:${var.frontend_port}"
+    backend_api = "http://${google_compute_instance.yolo_server.network_interface[0].access_config[0].nat_ip}:${var.backend_port}/api"
+    health      = "http://${google_compute_instance.yolo_server.network_interface[0].access_config[0].nat_ip}:${var.backend_port}/api/health"
+  }
+}
+
+output "instance_details" {
+  description = "Complete instance information"
+  value = {
+    name         = google_compute_instance.yolo_server.name
+    machine_type = google_compute_instance.yolo_server.machine_type
+    zone         = google_compute_instance.yolo_server.zone
+    external_ip  = google_compute_instance.yolo_server.network_interface[0].access_config[0].nat_ip
+    internal_ip  = google_compute_instance.yolo_server.network_interface[0].network_ip
+    ssh_user     = var.ssh_user
+  }
+}

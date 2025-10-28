@@ -1,0 +1,109 @@
+---
+- name: Ensure Terraform workspace directory exists
+  file:
+    path: "{{ terraform_workspace }}"
+    state: directory
+    mode: '0755'
+  tags: ['terraform-setup']
+
+- name: Check if Terraform is installed
+  command: which terraform
+  register: terraform_check
+  ignore_errors: yes
+  changed_when: false
+  tags: ['terraform-setup']
+
+- name: Install Terraform (if not present)
+  block:
+    - name: Create temporary directory for Terraform download
+      tempfile:
+        state: directory
+        suffix: terraform
+      register: terraform_temp_dir
+
+    - name: Download Terraform
+      get_url:
+        url: "https://releases.hashicorp.com/terraform/1.6.6/terraform_1.6.6_linux_amd64.zip"
+        dest: "{{ terraform_temp_dir.path }}/terraform.zip"
+        mode: '0644'
+
+    - name: Extract Terraform
+      unarchive:
+        src: "{{ terraform_temp_dir.path }}/terraform.zip"
+        dest: "{{ terraform_temp_dir.path }}"
+        remote_src: yes
+
+    - name: Copy Terraform to workspace
+      copy:
+        src: "{{ terraform_temp_dir.path }}/terraform"
+        dest: "{{ terraform_workspace }}/terraform"
+        mode: '0755'
+        remote_src: yes
+
+    - name: Clean up temporary directory
+      file:
+        path: "{{ terraform_temp_dir.path }}"
+        state: absent
+
+  when: terraform_check.rc != 0
+  tags: ['terraform-install']
+
+- name: Set Terraform binary path
+  set_fact:
+    terraform_binary: "{{ terraform_workspace }}/terraform"
+  tags: ['terraform-setup']
+
+- name: Copy Terraform configuration files
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ terraform_workspace }}/{{ item }}"
+    mode: '0644'
+  loop:
+    - main.tf
+    - variables.tf
+    - outputs.tf
+    - terraform.tfvars
+  tags: ['terraform-config']
+
+- name: Initialize Terraform
+  shell: |
+    cd {{ terraform_workspace }}
+    {{ terraform_binary }} init
+  register: terraform_init
+  tags: ['terraform-init']
+
+- name: Plan Terraform deployment
+  shell: |
+    cd {{ terraform_workspace }}
+    {{ terraform_binary }} plan -out=tfplan
+  register: terraform_plan
+  tags: ['terraform-plan']
+
+- name: Apply Terraform configuration
+  shell: |
+    cd {{ terraform_workspace }}
+    {{ terraform_binary }} apply -auto-approve tfplan
+  register: terraform_apply
+  tags: ['terraform-apply']
+
+- name: Get Terraform outputs
+  shell: |
+    cd {{ terraform_workspace }}
+    {{ terraform_binary }} output -json
+  register: terraform_outputs_raw
+  tags: ['terraform-outputs']
+
+- name: Parse Terraform outputs
+  set_fact:
+    terraform_outputs: "{{ terraform_outputs_raw.stdout | from_json }}"
+  tags: ['terraform-outputs']
+
+- name: Display Terraform outputs
+  debug:
+    msg: |
+      GCP Infrastructure Created Successfully!
+      
+      Instance: {{ terraform_outputs.instance_name.value }}
+      External IP: {{ terraform_outputs.instance_ip.value }}
+      SSH: {{ terraform_outputs.ssh_command.value }}
+  tags: ['terraform-outputs']

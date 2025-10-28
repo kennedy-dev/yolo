@@ -1,0 +1,73 @@
+---
+- name: Clone application repository
+  git:
+    repo: "{{ git_repo }}"
+    dest: "{{ app_directory }}"
+    version: "{{ git_branch }}"
+    force: yes
+  become_user: "{{ app_user }}"
+  tags: ['git', 'clone']
+
+- name: Create environment file (if needed by application)
+  template:
+    src: .env.j2
+    dest: "{{ app_directory }}/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: '0644'
+  tags: ['config']
+  when: create_env_file | default(false)
+
+- name: Ensure Docker service is running
+  systemd:
+    name: docker
+    state: started
+  tags: ['docker-check']
+
+- name: Wait for Docker socket to be available
+  wait_for:
+    path: /var/run/docker.sock
+    timeout: 30
+  tags: ['docker-check']
+
+- name: Verify user can access Docker
+  command: docker ps
+  become_user: "{{ app_user }}"
+  register: docker_access_test
+  changed_when: false
+  tags: ['docker-check']
+
+- name: Stop any existing containers
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_directory }}"
+    state: stopped
+  become: true
+  become_user: "{{ app_user }}"
+  tags: ['deploy']
+
+- name: Build and start application containers using existing docker-compose.yml
+  community.docker.docker_compose_v2:
+    project_src: "{{ app_directory }}"
+    build: always
+    state: present
+    remove_orphans: true
+  become: true
+  become_user: "{{ app_user }}"
+  tags: ['deploy']
+
+- name: Wait for containers to start properly
+  pause:
+    seconds: 30
+  tags: ['deploy']
+
+- name: Check running containers
+  command: docker ps
+  become_user: "{{ app_user }}"
+  register: running_containers
+  changed_when: false
+  tags: ['deploy', 'verify']
+
+- name: Display running containers
+  debug:
+    msg: "{{ running_containers.stdout_lines }}"
+  tags: ['deploy', 'verify']

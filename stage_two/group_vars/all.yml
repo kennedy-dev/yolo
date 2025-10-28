@@ -1,0 +1,50 @@
+# Infrastructure Configuration
+terraform_workspace: "{{ playbook_dir }}/terraform"
+
+# GCP Configuration  
+gcp_project_id: "{{ lookup('env', 'GCP_PROJECT_ID') }}"
+gcp_region: "us-central1"
+gcp_zone: "us-central1-a"
+
+# Server Configuration
+server_name: "yolo-stage2"
+server_user: "ubuntu"
+app_user: "ubuntu"
+deployment_environment: "stage2"
+
+# Application Configuration
+app_name: yolo-ecommerce
+app_directory: /opt/yolo-app
+git_repo: https://github.com/kennedy-dev/yolo.git
+git_branch: master
+
+# Application Ports (FIXED - removed duplicates)
+frontend_port: 3000
+backend_port: 5000
+mongodb_port: 27017
+
+# Database Configuration
+mongodb_database: yolomy
+
+# SSH Configuration (CRITICAL FIX - changed to match playbook expectations)
+ssh_user: "ubuntu"
+ssh_private_key_path: "~/.ssh/yolo_gcp_key"
+ssh_public_key_path: "~/.ssh/yolo_gcp_key.pub"
+
+# Docker Configuration
+docker_users:
+  - "{{ app_user }}"
+docker_username: "kipanch"
+image_tag: "v1.0.3"
+use_compose_v2: true
+
+# Environment Variables
+node_env: "production"
+jwt_secret: "your_super_secret_jwt_key_here"
+create_env_file: false
+
+# Derived URLs (will be overridden by Terraform outputs)
+frontend_url: "http://{{ ansible_host | default('localhost') }}:{{ frontend_port }}"
+backend_api_url: "http://{{ ansible_host | default('localhost') }}:{{ backend_port }}/api"
+health_url: "http://{{ ansible_host | default('localhost') }}:{{ backend_port }}/api/health"
+cors_origin: "http://{{ ansible_host | default('localhost') }}:{{ frontend_port }}"

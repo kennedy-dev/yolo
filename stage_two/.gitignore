@@ -1,0 +1,16 @@
+# Terraform sensitive files
+*.tfstate
+*.tfstate.*
+.terraform/
+tfplan
+*.tfvars
+.terraform.lock.hcl
+
+# SSH Keys
+*.pem
+*_key
+*_key.pub
+id_rsa*
+
+# Environment files
+.env

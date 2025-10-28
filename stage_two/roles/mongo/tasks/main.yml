@@ -1,0 +1,93 @@
+---
+# Wait briefly
+- name: Wait for MongoDB container to be ready
+  pause:
+    seconds: 30
+  tags: ['mongodb-wait']
+
+# Use Ansible's Docker module
+- name: Get MongoDB container info
+  community.docker.docker_container_info:
+    name: app-mongo
+    docker_host: "unix:///var/run/docker.sock"
+  register: mongo_info
+  changed_when: false
+  tags: ['mongodb-check']
+
+
+- name: Wait until MongoDB container is running/healthy
+  community.docker.docker_container_info:
+    name: app-mongo
+  register: mongo_wait
+  until: >
+    (mongo_wait.exists and
+     (
+       (mongo_wait.container.State.Health is defined and
+        mongo_wait.container.State.Health.Status == 'healthy')
+       or
+       (mongo_wait.container.State.Status == 'running')
+     )
+    )
+  retries: 30
+  delay: 3
+  changed_when: false
+  when: mongo_info.exists
+  tags: ['mongodb-check']
+
+# Seed data only if container exists
+- name: Initialize database with sample data (if container exists)
+  community.docker.docker_container_exec:
+    container: app-mongo
+    command:
+      - mongosh
+      - "{{ mongodb_database }}"
+      - --quiet
+      - --eval
+      - >-
+        if (db.products.countDocuments() === 0) {
+          db.products.insertMany([
+            {
+              name: 'Ansible Deployed Product 1',
+              description: 'High-quality product deployed via Ansible automation',
+              price: 99.99,
+              category: 'Automation',
+              stock: 50,
+              image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e',
+              createdAt: new Date()
+            },
+            {
+              name: 'Ansible Deployed Product 2',
+              description: 'Another amazing product from Ansible deployment',
+              price: 149.99,
+              category: 'DevOps',
+              stock: 25,
+              image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab',
+              createdAt: new Date()
+            },
+            {
+              name: 'Container Orchestrated Item',
+              description: 'Product showcasing container orchestration',
+              price: 79.99,
+              category: 'Technology',
+              stock: 75,
+              image: 'https://images.unsplash.com/photo-1560472354-b33ff0c44a43',
+              createdAt: new Date()
+            }
+          ]);
+          print('Sample products inserted via Ansible: ' + db.products.countDocuments());
+        } else {
+          print('Products collection already contains data: ' + db.products.countDocuments() + ' products');
+        }
+  register: seed_result
+  changed_when: "'inserted' in (seed_result.stdout | default(''))"
+  failed_when: false
+  become: true
+  become_user: "{{ app_user }}"
+  when: mongo_info.exists
+  tags: ['mongodb-init']
+
+- name: Display database initialization status
+  debug:
+    msg: "MongoDB initialization completed for database: {{ mongodb_database }}. Output: {{ seed_result.stdout | default('') }}"
+  when: mongo_info.exists
+  tags: ['mongodb-init']
