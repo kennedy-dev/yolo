@@ -1,15 +1,12 @@
 # YOLO Application - Google Kubernetes Deployment
 
-
-## 🌐 Live Application
-
-**URL**: `http://34.123.61.30:3000`
+**Live URL**: `http://34.123.61.30:3000`
 
 *(Update with actual IP after deployment)*
 
 ---
 
-## 📋 Project Overview
+## Project Overview
 
 This project uses the following Kubernetes objects:
 - **StatefulSet** for MongoDB (persistent database storage)
@@ -24,7 +21,7 @@ This project uses the following Kubernetes objects:
 
 ---
 
-## 🚀 Deployment Instructions
+## Deployment Instructions
 
 ### Prerequisites
 - Google Cloud Platform account with billing enabled
@@ -80,21 +77,21 @@ kubectl get service kennedy-yolo-client
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```
 yolo/
 ├── README.md                    # This file
-├── explanation.md               # Implementation reasoning (objectives 1-3)
+├── explanation.md               # Implementation reasoning
 ├── mongo-statefulset.yaml       # MongoDB StatefulSet + Service
 ├── backend-deployment.yaml      # Backend Deployment + Service
-├── client-deployment.yaml       # Frontend Deployment + LoadBalancer
-└── deploy.sh                    # Optional: Automated deployment script
+|── client-deployment.yaml       # Frontend Deployment + LoadBalancer
+
 ```
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 Internet
@@ -116,7 +113,7 @@ PersistentVolume (1Gi Google Cloud Disk)
 
 ---
 
-## ✅ Verification
+## Verification
 
 Check deployment status:
 ```bash
@@ -140,7 +137,7 @@ kubectl logs -l app=mongo
 
 ---
 
-## 🐳 Docker Images
+## Docker Images
 
 Images use semantic versioning: `username/repository:vMAJOR.MINOR.PATCH`
 
@@ -150,7 +147,7 @@ Images use semantic versioning: `username/repository:vMAJOR.MINOR.PATCH`
 
 ---
 
-## 🔄 Git Workflow
+## Git Workflow
 
 Development workflow used:
 ```bash
@@ -168,7 +165,7 @@ git push origin main
 
 ---
 
-## 🧹 Cleanup
+## Cleanup
 
 To remove all resources:
 ```bash
@@ -185,7 +182,7 @@ gcloud container clusters delete yolo-cluster --zone=us-central1-a
 
 ---
 
-## 📖 Additional Documentation
+## Additional Documentation
 
 - **explanation.md** - Detailed reasoning for implementation decisions (objectives 1-3)
 - See individual YAML files for inline comments
