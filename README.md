@@ -1,112 +1,240 @@
-# Stage 1: Ansible Configuration Management
+# YOLO Application - Google Kubernetes Deployment
 
-## Overview
-Automated deployment of a containerized e-commerce application using Ansible and Vagrant. This stage demonstrates configuration management and container orchestration using existing Docker configurations.
 
-## What This Implements
+## 🌐 Live Application
 
-| Component | Technology | Purpose |
-|-----------|------------|---------|
-| Infrastructure | Vagrant + VirtualBox | VM provisioning |
-| Configuration | Ansible | System setup and deployment |
-| Containers | Docker + Docker Compose | Application runtime |
-| Database | MongoDB | Data persistence |
+**URL**: `http://34.123.61.30:3000`
 
-## Quick Start
+*(Update with actual IP after deployment)*
+
+---
+
+## 📋 Project Overview
+
+This project uses the following Kubernetes objects:
+- **StatefulSet** for MongoDB (persistent database storage)
+- **Deployments** for Frontend and Backend (stateless applications)  
+- **LoadBalancer Service** for external access
+- **PersistentVolumes** for data persistence
+
+**Built with Docker images from Week 2 project:**
+- Frontend: `kipanch/yolo-client:v1.0.3`
+- Backend: `kipanch/yolo-backend:v1.0.3`
+- Database: `mongo:latest`
+
+---
+
+## 🚀 Deployment Instructions
 
 ### Prerequisites
-- VirtualBox
-- Vagrant
-- Ansible (>= 2.9)
+- Google Cloud Platform account with billing enabled
+- `gcloud` CLI installed ([Install Guide](https://cloud.google.com/sdk/docs/install))
+- `kubectl` installed
+- Git installed
 
-### One-Command Deployment
+### Step 1: Clone Repository
 ```bash
-vagrant up
+git clone https://github.com/kennedy-dev/yolo.git
+cd yolo
 ```
 
-This command will:
-1. Create Ubuntu 20.04 VM
-2. Install Docker and dependencies
-3. Clone application repository
-4. Build and start all containers
-5. Initialize database with sample data
-
-### Access the Application
-- Frontend: http://localhost:8080
-- Backend API: http://localhost:8081/api
-- Health Check: http://localhost:8081/api/health
-
-## Key Features
-
-- **Modular Roles**: Clean separation of concerns (common, docker, application, mongodb)
-- **Uses Existing Configs**: Leverages repository's Docker configurations rather than recreating them
-- **Data Persistence**: MongoDB data survives container restarts
-- **Health Monitoring**: Application health checks and verification
-- **Error Handling**: Graceful failure management and troubleshooting
-
-## Testing Add Product Functionality
-
-1. Navigate to http://localhost:8080
-2. Find the "Add Product" form/page
-3. Fill in product details (name, price, category, description)
-4. Submit the form
-5. Verify the product appears in the product list
-6. Test persistence: `vagrant reload` and confirm data survives
-
-## Manual Commands
-
+### Step 2: Setup GCP
 ```bash
-# Check VM status
-vagrant status
+# Authenticate
+gcloud auth login
 
-# SSH into VM
-vagrant ssh
+# Set your project
+gcloud config set project YOUR_PROJECT_ID
 
-# Check containers
-vagrant ssh -c "docker ps"
-
-# View logs
-vagrant ssh -c "docker logs kennedy-yolo-backend"
-
-# Restart application
-vagrant ssh -c "cd /opt/yolo-app && docker-compose restart"
-
-# Clean rebuild
-vagrant destroy -f && vagrant up
+# Install auth plugin
+gcloud components install gke-gcloud-auth-plugin
 ```
 
-## Troubleshooting
-
-**Port conflicts**: Modify host ports in Vagrantfile
-```ruby
-config.vm.network "forwarded_port", guest: 3000, host: 9090
-```
-
-**VM won't start**: Check VirtualBox installation and available resources
-
-**Containers not building**: 
+### Step 3: Create GKE Cluster
 ```bash
-vagrant ssh
-cd /opt/yolo-app
-docker-compose logs
+gcloud container clusters create yolo-cluster \
+  --zone=us-central1-a \
+  --num-nodes=2 \
+  --machine-type=e2-medium
+
+# Get credentials
+gcloud container clusters get-credentials yolo-cluster --zone=us-central1-a
 ```
 
-**Database connection issues**: Wait for MongoDB container to fully initialize (may take 30-60 seconds)
+### Step 4: Deploy Application
+```bash
+# Deploy in order (database first!)
+kubectl apply -f mongo-statefulset.yaml
+kubectl apply -f backend-deployment.yaml
+kubectl apply -f client-deployment.yaml
+```
 
-## What This Demonstrates
+### Step 5: Get Application URL
+```bash
+# Wait 2-5 minutes for LoadBalancer IP
+kubectl get service kennedy-yolo-client
 
-- **Infrastructure as Code**: VM and application defined in code
-- **Configuration Management**: Automated system setup with Ansible
-- **Container Orchestration**: Multi-service application deployment
-- **Best Practices**: Modular roles, variable management, error handling
-- **Production Patterns**: Health checks, logging, persistence
+# Look for EXTERNAL-IP column
+# Access application at: http://34.123.61.30:3000
+```
 
-## Technical Implementation
+---
 
-- **Vagrant**: Uses Jeff Geerling's Ubuntu 20.04 box for reliability
-- **Ansible**: 4 modular roles with proper dependency management
-- **Docker**: Uses community.docker.docker_compose_v2 module for modern Docker Compose support
-- **Variables**: Centralized configuration in group_vars/all.yml
-- **Tags**: Selective task execution for debugging and development
+## 📁 Repository Structure
 
-Perfect foundation for demonstrating DevOps automation skills.
+```
+yolo/
+├── README.md                    # This file
+├── explanation.md               # Implementation reasoning (objectives 1-3)
+├── mongo-statefulset.yaml       # MongoDB StatefulSet + Service
+├── backend-deployment.yaml      # Backend Deployment + Service
+├── client-deployment.yaml       # Frontend Deployment + LoadBalancer
+└── deploy.sh                    # Optional: Automated deployment script
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+Internet
+    ↓
+LoadBalancer Service (Public IP:3000)
+    ↓
+Frontend Pods - Deployment
+    ↓
+Backend Service (Internal ClusterIP:5000)
+    ↓
+Backend Pods - Deployment
+    ↓
+MongoDB Service (Headless:27017)
+    ↓
+MongoDB Pod - StatefulSet
+    ↓
+PersistentVolume (1Gi Google Cloud Disk)
+```
+
+---
+
+## ✅ Verification
+
+Check deployment status:
+```bash
+# View all pods (should show 3 pods Running)
+kubectl get pods
+
+# View services (LoadBalancer should have EXTERNAL-IP)
+kubectl get services
+
+# View StatefulSet (should show 1/1 READY)
+kubectl get statefulset
+
+# View persistent storage (should show Bound PVC)
+kubectl get pvc
+
+# View logs if needed
+kubectl logs -l app=yolo-client
+kubectl logs -l app=yolo-backend
+kubectl logs -l app=mongo
+```
+
+---
+
+## 🐳 Docker Images
+
+Images use semantic versioning: `username/repository:vMAJOR.MINOR.PATCH`
+
+- **kipanch/yolo-client:v1.0.3** - React frontend
+- **kipanch/yolo-backend:v1.0.3** - Node.js API
+- **mongo:latest** - MongoDB database
+
+**Why version tags?**
+- Ensures reproducible deployments
+- Easy to track which version is running
+- Enables rollbacks if issues occur
+- Professional image management
+
+---
+
+## 🔧 Troubleshooting
+
+### Pods Not Starting
+```bash
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+```
+
+### No External IP After 5 Minutes
+```bash
+# Check LoadBalancer status
+kubectl describe service kennedy-yolo-client
+
+# Verify GCP quotas
+gcloud compute project-info describe --project=YOUR_PROJECT_ID
+```
+
+### Application Not Accessible
+```bash
+# Ensure all pods are Running
+kubectl get pods
+
+# Check pod logs for errors
+kubectl logs <pod-name>
+
+# Verify services are properly configured
+kubectl get services
+kubectl get endpoints
+```
+
+### Auth Plugin Error
+```bash
+gcloud components install gke-gcloud-auth-plugin
+gcloud container clusters get-credentials yolo-cluster --zone=us-central1-a
+```
+
+---
+
+## 🔄 Git Workflow
+
+Development workflow used:
+```bash
+# Feature branch development
+git checkout -b feature/k8s-manifests
+git add .
+git commit -m "Add Kubernetes deployment manifests"
+git push origin feature/k8s-manifests
+
+# Merge to main
+git checkout main
+git merge feature/k8s-manifests
+git push origin main
+```
+
+**Commit Message Standards:**
+- Clear, descriptive messages
+- Present tense ("Add" not "Added")
+- Reference what was changed
+
+---
+
+## 🧹 Cleanup
+
+To remove all resources:
+```bash
+# Delete Kubernetes resources
+kubectl delete -f client-deployment.yaml
+kubectl delete -f backend-deployment.yaml
+kubectl delete -f mongo-statefulset.yaml
+
+# Delete GKE cluster
+gcloud container clusters delete yolo-cluster --zone=us-central1-a
+```
+
+**Note**: Deleting the cluster also removes all PersistentVolumes and data.
+
+---
+
+## 📖 Additional Documentation
+
+- **explanation.md** - Detailed reasoning for implementation decisions (objectives 1-3)
+- See individual YAML files for inline comments

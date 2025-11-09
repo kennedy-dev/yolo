@@ -1,0 +1,10 @@
+gcp_project_id       = "ecommerce-476502"
+gcp_region          = "us-central1"
+gcp_zone            = "us-central1-a"
+server_name         = "yolo-stage2"
+machine_type        = "e2-medium"
+ssh_user            = "ubuntu"
+ssh_public_key_path = "~/.ssh/yolo_gcp_key.pub"
+environment         = "stage2"
+frontend_port       = 3000
+backend_port        = 5000
