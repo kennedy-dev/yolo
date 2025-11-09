@@ -134,17 +134,6 @@ kubectl logs -l app=yolo-client
 kubectl logs -l app=yolo-backend
 kubectl logs -l app=mongo
 ```
-
----
-
-## Docker Images
-
-Images use semantic versioning: `username/repository:vMAJOR.MINOR.PATCH`
-
-- **kipanch/yolo-client:v1.0.3** - React frontend
-- **kipanch/yolo-backend:v1.0.3** - Node.js API
-- **mongo:latest** - MongoDB database
-
 ---
 
 ## Git Workflow
