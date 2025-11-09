@@ -1,47 +1,240 @@
-# How to deploy the application on Google Clould
+# YOLO Application - Google Kubernetes Deployment
 
-## Live Application
 
-**URL**: `http://http://34.123.61.30:3000`
+## 🌐 Live Application
 
-*(Replace with your actual IP after deployment)*
+**URL**: `http://34.123.61.30:3000`
+
+*(Update with actual IP after deployment)*
 
 ---
 
-## Quick Deploy
+## 📋 Project Overview
 
-### 1. Setup
+This project uses the following Kubernetes objects:
+- **StatefulSet** for MongoDB (persistent database storage)
+- **Deployments** for Frontend and Backend (stateless applications)  
+- **LoadBalancer Service** for external access
+- **PersistentVolumes** for data persistence
+
+**Built with Docker images from Week 2 project:**
+- Frontend: `kipanch/yolo-client:v1.0.3`
+- Backend: `kipanch/yolo-backend:v1.0.3`
+- Database: `mongo:latest`
+
+---
+
+## 🚀 Deployment Instructions
+
+### Prerequisites
+- Google Cloud Platform account with billing enabled
+- `gcloud` CLI installed ([Install Guide](https://cloud.google.com/sdk/docs/install))
+- `kubectl` installed
+- Git installed
+
+### Step 1: Clone Repository
 ```bash
-# Login to GCP
+git clone https://github.com/kennedy-dev/yolo.git
+cd yolo
+```
+
+### Step 2: Setup GCP
+```bash
+# Authenticate
 gcloud auth login
 
 # Set your project
 gcloud config set project YOUR_PROJECT_ID
 
-# Install auth plugin (if needed)
+# Install auth plugin
 gcloud components install gke-gcloud-auth-plugin
 ```
 
-### 2. Deploy
-
+### Step 3: Create GKE Cluster
+```bash
 gcloud container clusters create yolo-cluster \
-  --zone=us-central1-a \ /*or other region you'd like*/
+  --zone=us-central1-a \
   --num-nodes=2 \
   --machine-type=e2-medium
 
+# Get credentials
 gcloud container clusters get-credentials yolo-cluster --zone=us-central1-a
+```
 
+### Step 4: Deploy Application
+```bash
+# Deploy in order (database first!)
 kubectl apply -f mongo-statefulset.yaml
 kubectl apply -f backend-deployment.yaml
 kubectl apply -f client-deployment.yaml
 ```
 
-### 3. Get Your URL
+### Step 5: Get Application URL
 ```bash
+# Wait 2-5 minutes for LoadBalancer IP
 kubectl get service kennedy-yolo-client
-# Wait for EXTERNAL-IP (2-5 minutes)
-# Access: http://EXTERNAL-IP:3000
+
+# Look for EXTERNAL-IP column
+# Access application at: http://34.123.61.30:3000
 ```
 
 ---
 
+## 📁 Repository Structure
+
+```
+yolo/
+├── README.md                    # This file
+├── explanation.md               # Implementation reasoning (objectives 1-3)
+├── mongo-statefulset.yaml       # MongoDB StatefulSet + Service
+├── backend-deployment.yaml      # Backend Deployment + Service
+├── client-deployment.yaml       # Frontend Deployment + LoadBalancer
+└── deploy.sh                    # Optional: Automated deployment script
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+Internet
+    ↓
+LoadBalancer Service (Public IP:3000)
+    ↓
+Frontend Pods - Deployment
+    ↓
+Backend Service (Internal ClusterIP:5000)
+    ↓
+Backend Pods - Deployment
+    ↓
+MongoDB Service (Headless:27017)
+    ↓
+MongoDB Pod - StatefulSet
+    ↓
+PersistentVolume (1Gi Google Cloud Disk)
+```
+
+---
+
+## ✅ Verification
+
+Check deployment status:
+```bash
+# View all pods (should show 3 pods Running)
+kubectl get pods
+
+# View services (LoadBalancer should have EXTERNAL-IP)
+kubectl get services
+
+# View StatefulSet (should show 1/1 READY)
+kubectl get statefulset
+
+# View persistent storage (should show Bound PVC)
+kubectl get pvc
+
+# View logs if needed
+kubectl logs -l app=yolo-client
+kubectl logs -l app=yolo-backend
+kubectl logs -l app=mongo
+```
+
+---
+
+## 🐳 Docker Images
+
+Images use semantic versioning: `username/repository:vMAJOR.MINOR.PATCH`
+
+- **kipanch/yolo-client:v1.0.3** - React frontend
+- **kipanch/yolo-backend:v1.0.3** - Node.js API
+- **mongo:latest** - MongoDB database
+
+**Why version tags?**
+- Ensures reproducible deployments
+- Easy to track which version is running
+- Enables rollbacks if issues occur
+- Professional image management
+
+---
+
+## 🔧 Troubleshooting
+
+### Pods Not Starting
+```bash
+kubectl describe pod <pod-name>
+kubectl logs <pod-name>
+```
+
+### No External IP After 5 Minutes
+```bash
+# Check LoadBalancer status
+kubectl describe service kennedy-yolo-client
+
+# Verify GCP quotas
+gcloud compute project-info describe --project=YOUR_PROJECT_ID
+```
+
+### Application Not Accessible
+```bash
+# Ensure all pods are Running
+kubectl get pods
+
+# Check pod logs for errors
+kubectl logs <pod-name>
+
+# Verify services are properly configured
+kubectl get services
+kubectl get endpoints
+```
+
+### Auth Plugin Error
+```bash
+gcloud components install gke-gcloud-auth-plugin
+gcloud container clusters get-credentials yolo-cluster --zone=us-central1-a
+```
+
+---
+
+## 🔄 Git Workflow
+
+Development workflow used:
+```bash
+# Feature branch development
+git checkout -b feature/k8s-manifests
+git add .
+git commit -m "Add Kubernetes deployment manifests"
+git push origin feature/k8s-manifests
+
+# Merge to main
+git checkout main
+git merge feature/k8s-manifests
+git push origin main
+```
+
+**Commit Message Standards:**
+- Clear, descriptive messages
+- Present tense ("Add" not "Added")
+- Reference what was changed
+
+---
+
+## 🧹 Cleanup
+
+To remove all resources:
+```bash
+# Delete Kubernetes resources
+kubectl delete -f client-deployment.yaml
+kubectl delete -f backend-deployment.yaml
+kubectl delete -f mongo-statefulset.yaml
+
+# Delete GKE cluster
+gcloud container clusters delete yolo-cluster --zone=us-central1-a
+```
+
+**Note**: Deleting the cluster also removes all PersistentVolumes and data.
+
+---
+
+## 📖 Additional Documentation
+
+- **explanation.md** - Detailed reasoning for implementation decisions (objectives 1-3)
+- See individual YAML files for inline comments
