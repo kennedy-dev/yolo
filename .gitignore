@@ -7,3 +7,24 @@ vault.yml
 .vscode
 .vscode/*
 .vscode/*.json
+# Ansible
+*.retry
+.ansible/
+# Environment files
+.env
+*.json
+*.env
+# IDE
+.idea/
+# OS
+.DS_Store
+Thumbs.db
+# Logs
+logs/
+*.log
+*.bak
+*.backup
+stage_two/.env
+stage_two/terraform/terraform.tfvars
+stage_two/terraform/*.tfstate*
+stage_two/terraform/.terraform/
