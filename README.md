@@ -148,50 +148,6 @@ Images use semantic versioning: `username/repository:vMAJOR.MINOR.PATCH`
 - **kipanch/yolo-backend:v1.0.3** - Node.js API
 - **mongo:latest** - MongoDB database
 
-**Why version tags?**
-- Ensures reproducible deployments
-- Easy to track which version is running
-- Enables rollbacks if issues occur
-- Professional image management
-
----
-
-## 🔧 Troubleshooting
-
-### Pods Not Starting
-```bash
-kubectl describe pod <pod-name>
-kubectl logs <pod-name>
-```
-
-### No External IP After 5 Minutes
-```bash
-# Check LoadBalancer status
-kubectl describe service kennedy-yolo-client
-
-# Verify GCP quotas
-gcloud compute project-info describe --project=YOUR_PROJECT_ID
-```
-
-### Application Not Accessible
-```bash
-# Ensure all pods are Running
-kubectl get pods
-
-# Check pod logs for errors
-kubectl logs <pod-name>
-
-# Verify services are properly configured
-kubectl get services
-kubectl get endpoints
-```
-
-### Auth Plugin Error
-```bash
-gcloud components install gke-gcloud-auth-plugin
-gcloud container clusters get-credentials yolo-cluster --zone=us-central1-a
-```
-
 ---
 
 ## 🔄 Git Workflow
@@ -209,11 +165,6 @@ git checkout main
 git merge feature/k8s-manifests
 git push origin main
 ```
-
-**Commit Message Standards:**
-- Clear, descriptive messages
-- Present tense ("Add" not "Added")
-- Reference what was changed
 
 ---
 
