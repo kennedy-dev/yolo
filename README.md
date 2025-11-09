@@ -173,5 +173,5 @@ gcloud container clusters delete yolo-cluster --zone=us-central1-a
 
 ## Additional Documentation
 
-- **explanation.md** - Detailed reasoning for implementation decisions (objectives 1-3)
+- **explanation.md** - Detailed reasoning for Kubernetes implementation decisions
 - See individual YAML files for inline comments
